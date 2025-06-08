@@ -26,7 +26,7 @@ export class VentaComponent implements OnInit {
   totalPagar: number = 0;
 
   formularioProductoVenta: FormGroup;
-  columnasTable: string[] = ['producto', 'cantidad', 'precio', 'total', 'acciones'];
+  columnasTabla: string[] = ['producto', 'cantidad', 'precio', 'total', 'acciones'];
   datosDetalleVenta = new MatTableDataSource(this.listaProductoParaVentas);
 
   constructor(
