@@ -1,0 +1,80 @@
+<h1 style="margin: 10px 0 0 20px">Productos</h1>
+
+<mat-card style="margin: 10px 20px 20px">
+  <mat-card-title>
+    <button mat-raised-button color="primary" (click)="nuevoProducto()">
+      <mat-icon>add</mat-icon>
+      Nuevo Producto
+    </button>
+  </mat-card-title>
+  <mat-divider></mat-divider>
+  <mat-card-content class="dashboard-card-content">
+    <mat-form-field appearance="standard">
+      <mat-label>Buscar</mat-label>
+      <input matInput (keyup)="aplicarFiltroTabla($event)" #input />
+    </mat-form-field>
+
+    <div class="mat-elevation-z2">
+      <table mat-table [dataSource]="dataListaProductos" class="mat-table">
+
+        <!-- Nombre Completo Column -->
+        <ng-container matColumnDef="nombre">
+          <th mat-header-cell *matHeaderCellDef>Nombre</th>
+          <td mat-cell *matCellDef="let producto">{{ producto.nombre }}</td>
+        </ng-container>
+
+        <!-- Categoria Column -->
+        <ng-container matColumnDef="categoria">
+          <th mat-header-cell *matHeaderCellDef>Categoria</th>
+          <td mat-cell *matCellDef="let producto">{{ producto.descripcionCategoria }}</td>
+        </ng-container>
+
+        <!-- Stock Column -->
+        <ng-container matColumnDef="stock">
+          <th mat-header-cell *matHeaderCellDef>Stock</th>
+          <td mat-cell *matCellDef="let producto">{{ producto.stock }}</td>
+        </ng-container>
+
+        <!-- precio Column -->
+        <ng-container matColumnDef="precio">
+          <th mat-header-cell *matHeaderCellDef>Precio</th>
+          <td mat-cell *matCellDef="let producto">{{ producto.precio }}</td>
+        </ng-container>
+
+        <!-- Estado Column - SOLUCIÓN DEFINITIVA -->
+        <ng-container matColumnDef="estado">
+          <th mat-header-cell *matHeaderCellDef>Estado</th>
+          <td mat-cell *matCellDef="let producto">
+            {{ producto.esActivo == 1 ? 'Activo' : 'Inactivo' }}
+          </td>
+        </ng-container>
+
+        <!-- Acciones Column -->
+        <ng-container matColumnDef="acciones">
+          <th mat-header-cell *matHeaderCellDef style="width: 80px">Acciones</th>
+          <td mat-cell *matCellDef="let producto">
+            <button mat-icon-button color="primary" (click)="editarProducto(producto)">
+              <mat-icon>edit</mat-icon>
+            </button>
+            <button mat-icon-button color="warn" (click)="eliminarProducto(producto)">
+              <mat-icon>delete</mat-icon>
+            </button>
+          </td>
+        </ng-container>
+
+        <!-- Table Header and Rows -->
+        <tr mat-header-row *matHeaderRowDef="columnasTabla"></tr>
+        <tr mat-row *matRowDef="let row; columns: columnasTabla;"></tr>
+
+        <!-- No Data Row -->
+        <tr class="mat-row" *matNoDataRow>
+          <td class="mat-cell" colspan="5">No se encontraron resultados "{{ input.value }}"</td>
+        </tr>
+      </table>
+
+      <!-- Paginator -->
+      <mat-paginator [pageSizeOptions]="[5, 10, 20]" showFirstLastButtons></mat-paginator>
+    </div>
+  </mat-card-content>
+</mat-card>
+

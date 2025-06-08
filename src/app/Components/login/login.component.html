@@ -1,0 +1,39 @@
+<div class="body">  
+  <mat-card class="login-card">
+    <div class="header">
+      <h1>Login</h1>
+    </div>
+    <mat-card-content style="padding-bottom: 15px;">
+      <form [formGroup]="formularioLogin" (ngSubmit)="iniciarSesion()">
+        <!-- Campo de correo electrónico -->
+        <mat-form-field class="full-width" appearance="outline">
+          <mat-label>Correo Electrónico</mat-label>
+          <input matInput formControlName="email" autocomplete="off" type="email">
+          <mat-icon matSuffix>email</mat-icon>
+        </mat-form-field>
+
+        <!-- Campo de contraseña -->
+        <mat-form-field class="full-width" appearance="outline">
+          <mat-label>Contraseña</mat-label>
+          <input matInput [type]="ocultarPassword ? 'password' : 'text'" formControlName="password" autocomplete="off">
+          <button mat-icon-button matSuffix (click)="ocultarPassword = !ocultarPassword" type="button">
+            <mat-icon>{{ ocultarPassword ? 'visibility' : 'visibility_off' }}</mat-icon>
+          </button>
+        </mat-form-field>
+
+        <!-- Botón de inicio de sesión -->
+        <button class="full-width" mat-raised-button color="primary" type="submit" [disabled]="formularioLogin.invalid">
+          <mat-icon>login</mat-icon>
+          Iniciar Sesión
+        </button>
+      </form>
+    </mat-card-content>
+
+    <!-- Barra de progreso -->
+    <mat-card-footer>
+      <mat-progress-bar mode="indeterminate" *ngIf="mostrarLoading"></mat-progress-bar>
+    </mat-card-footer>
+  </mat-card>
+</div>
+
+
