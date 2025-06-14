@@ -19,7 +19,7 @@ export class VentaComponent implements OnInit {
   listaProductoFiltro: Producto[] = [];
 
   listaProductoParaVentas: DetalleVenta[] = [];
-  bloquearBotonregistrar: boolean = false;
+  bloquearBotonRegistrar: boolean = false;
 
   productoSeleccionado!: Producto;
   tipoDePagoPorDefecto: string = "Efectivo";
@@ -28,6 +28,11 @@ export class VentaComponent implements OnInit {
   formularioProductoVenta: FormGroup;
   columnasTabla: string[] = ['producto', 'cantidad', 'precio', 'total', 'acciones'];
   datosDetalleVenta = new MatTableDataSource(this.listaProductoParaVentas);
+
+  retornarProductoPorFiltro(busqueda: any): Producto[] {
+    const valorBuscado = typeof busqueda === 'string' ? busqueda.toLocaleLowerCase() : busqueda.nombre.toLocaleLowerCase();
+    return this.listaProductos.filter(item => item.nombre.toLocaleLowerCase().includes(valorBuscado));
+  }
 
   constructor(
     private fb: FormBuilder,
@@ -47,7 +52,7 @@ export class VentaComponent implements OnInit {
           this.listaProductos = lista.filter(p => p.esActivo && p.stock > 0);
         }
       },
-      error: (e) => {
+      error: () => {
         this._utilidadServicio.mostrarAlerta('Error al cargar productos', 'error');
       }
     });
@@ -59,10 +64,7 @@ export class VentaComponent implements OnInit {
 
   ngOnInit(): void { }
 
-  retornarProductoPorFiltro(busqueda: any): Producto[] {
-    const valorBuscado = typeof busqueda === 'string' ? busqueda.toLocaleLowerCase() : busqueda.nombre.toLocaleLowerCase();
-    return this.listaProductos.filter(item => item.nombre.toLocaleLowerCase().includes(valorBuscado));
-  }
+  
 
   mostrarProducto(producto: Producto): string {
     return producto.nombre;
@@ -88,7 +90,13 @@ export class VentaComponent implements OnInit {
     const _precio: number = parseFloat(this.productoSeleccionado.precio.toString());
     const _total: number = _cantidad * _precio;
 
-    this.totalPagar += _total;
+    // Reducir stock del producto seleccionado
+    const productoEnLista = this.listaProductos.find(p => p.idProducto === this.productoSeleccionado.idProducto);
+    if (productoEnLista) {
+      productoEnLista.stock -= _cantidad;
+    }
+
+    this.totalPagar = parseFloat((this.totalPagar + _total).toFixed(2)); // Controlar precisión
 
     this.listaProductoParaVentas.push({
       idProducto: this.productoSeleccionado.idProducto,
@@ -98,57 +106,70 @@ export class VentaComponent implements OnInit {
       totalTexto: _total.toFixed(2)
     });
 
-    this.datosDetalleVenta.data = this.listaProductoParaVentas;
-
+    this.datosDetalleVenta = new MatTableDataSource(this.listaProductoParaVentas);
+  
     this.formularioProductoVenta.patchValue({ producto: '', cantidad: '' });
     this.productoSeleccionado = undefined!;
   }
 
-  eliminarProducto(detalle: DetalleVenta){
-    this.totalPagar -= parseFloat(detalle.totalTexto);
-    this.listaProductoParaVentas = this.listaProductoParaVentas.filter(item => item.descripcionProducto !== detalle.descripcionProducto);
-    this.datosDetalleVenta= new MatTableDataSource(this.listaProductoParaVentas);
-  }
-  registrarVenta() {
-  if (this.listaProductoParaVentas.length > 0) {
-    this.bloquearBotonregistrar = true;
+  eliminarProducto(detalle: DetalleVenta): void {
+    const detalleEliminado = this.listaProductoParaVentas.find(p => p.descripcionProducto === detalle.descripcionProducto);
 
-    const venta = {
-      tipoPago: this.tipoDePagoPorDefecto,
-      totalTexto: this.totalPagar.toFixed(2),
-      detalleVenta: this.listaProductoParaVentas
-    };
+    if (detalleEliminado) {
+      this.totalPagar = parseFloat((this.totalPagar - parseFloat(detalleEliminado.totalTexto)).toFixed(2));
 
-    this._ventaServicio.registrar(venta).subscribe({
-      next: (response) => {
-        if (response.status) {
-          this.totalPagar = 0.00;
-          this.listaProductoParaVentas = [];
-          this.datosDetalleVenta.data = this.listaProductoParaVentas; 
-
-          Swal.fire({
-            icon: 'success',
-            title: 'Venta registrada',
-            text: `NuevaVenta: ${response.value.numeroDocumento}`,
-          });
-        }
-      },
-      error: (e) => {
-        console.error('Error al registrar la venta:', e);
-        this._utilidadServicio.mostrarAlerta('Error al registrar la venta', 'error');
-      },
-      complete: () => {
-        this.bloquearBotonregistrar = false; 
+      // Restaurar stock del producto eliminado
+      const producto = this.listaProductos.find(p => p.idProducto === detalleEliminado.idProducto);
+      if (producto) {
+        producto.stock += detalleEliminado.cantidad;
       }
-    });
-  } else {
-    this._utilidadServicio.mostrarAlerta(
-      'Debe agregar al menos un producto para registrar la venta',
-      'error'
-    );
+
+      this.listaProductoParaVentas = this.listaProductoParaVentas.filter(item => item !== detalleEliminado);
+      this.datosDetalleVenta.data = this.listaProductoParaVentas;
+    }
+  }
+
+  registrarVenta(): void {
+    if (this.listaProductoParaVentas.length > 0) {
+      this.bloquearBotonRegistrar = true;
+
+      const venta = {
+        tipoPago: this.tipoDePagoPorDefecto,
+        totalTexto: String(this.totalPagar.toFixed(2)),
+        detalleVenta: this.listaProductoParaVentas
+        
+      };
+      
+      this._ventaServicio.registrar(venta).subscribe({
+        next: (response) => {
+          if (response.status) {
+            this.totalPagar = 0.00;
+            this.listaProductoParaVentas = [];
+            this.datosDetalleVenta.data = this.listaProductoParaVentas;
+
+            Swal.fire({
+              icon: 'success',
+              title: 'Venta registrada',
+              text: `NuevaVenta: ${response.value.numeroDocumento}`,
+            });
+          }
+        },
+        error: (e) => {
+          console.error('Error al registrar la venta:', e);
+          this._utilidadServicio.mostrarAlerta('Error al registrar la venta', 'error');
+        },
+        complete: () => {
+          this.bloquearBotonRegistrar = false;
+        }
+      });
+    } else {
+      this._utilidadServicio.mostrarAlerta(
+        'Debe agregar al menos un producto para registrar la venta',
+        'error'
+      );
+    }
   }
 }
 
-}
 
 
